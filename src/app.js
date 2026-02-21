@@ -348,7 +348,7 @@ const renderTree = () => {
 
   const totalColumns = processOrder.length + 3;
   const availableWidth = Math.max(860, containerWidth) - padX * 2 - nodeW;
-  const minColGap = nodeW + 60;
+  const minColGap = nodeW + 160;
   const colGap = Math.max(minColGap, Math.floor(availableWidth / (totalColumns - 1)));
 
   const styleCount = state.styleCollapsed ? 1 : styleCategory.items.length;
@@ -366,7 +366,10 @@ const renderTree = () => {
   const availableHeight = Math.max(420, containerHeight) - padY * 2;
   const minItemGap = nodeH + 12;
   const itemGap = Math.max(minItemGap, Math.min(64, Math.floor(availableHeight / maxVerticalItems)));
-  const itemOffset = Math.max(nodeW + 40, Math.min(nodeW + 140, colGap - 20));
+  const itemOffset = Math.max(
+    120,
+    Math.min(Math.floor(colGap * 0.5), colGap - nodeW - 20)
+  );
 
   const layout = {
     padX,
