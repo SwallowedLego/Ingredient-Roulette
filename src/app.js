@@ -12,7 +12,9 @@ const status = document.getElementById("status");
 const state = {
   mode: "random",
   selected: new Map(),
-  amounts: new Map()
+  amounts: new Map(),
+  collapsedCategories: new Set(),
+  styleCollapsed: false
 };
 
 const shuffle = (list) => {
@@ -30,6 +32,20 @@ const randomFromRange = (min, max, step) => {
 };
 
 const getCategoryById = (id) => categories.find((category) => category.id === id);
+
+const toggleCategoryCollapse = (categoryId) => {
+  if (state.collapsedCategories.has(categoryId)) {
+    state.collapsedCategories.delete(categoryId);
+  } else {
+    state.collapsedCategories.add(categoryId);
+  }
+  render();
+};
+
+const toggleStyleCollapse = () => {
+  state.styleCollapsed = !state.styleCollapsed;
+  render();
+};
 
 const setStatus = () => {
   status.textContent = state.mode === "random" ? "Mode: Randomize" : "Mode: Pick your own";
@@ -156,8 +172,9 @@ const renderTree = () => {
   const layout = {
     padX: 40,
     padY: 40,
-    colGap: 220,
-    rowGap: 42,
+    colGap: 180,
+    itemGap: 34,
+    blockGap: 24,
     nodeW: 170,
     nodeH: 28
   };
@@ -167,29 +184,39 @@ const renderTree = () => {
     layout.padX + layout.colGap,
     layout.padX + layout.colGap * 2,
     layout.padX + layout.colGap * 3,
-    layout.padX + layout.colGap * 4
+    layout.padX + layout.colGap * 4,
+    layout.padX + layout.colGap * 5,
+    layout.padX + layout.colGap * 6
   ];
 
-  let currentY = layout.padY;
+  let cursorY = layout.padY;
   const ingredientNodes = [];
   const categoryNodes = [];
 
   ingredientCategories.forEach((category) => {
-    const startY = currentY;
-    category.items.forEach((item) => {
-      ingredientNodes.push({
-        id: item.id,
-        label: item.name,
-        categoryId: category.id,
-        x: colX[0],
-        y: currentY,
-        type: "ingredient"
-      });
-      currentY += layout.rowGap;
-    });
+    const isCollapsed = state.collapsedCategories.has(category.id);
+    const items = isCollapsed ? [] : category.items;
+    const itemYs = [];
 
-    const endY = currentY - layout.rowGap;
-    const centerY = (startY + endY) / 2;
+    if (items.length) {
+      items.forEach((item) => {
+        ingredientNodes.push({
+          id: item.id,
+          label: item.name,
+          categoryId: category.id,
+          x: colX[0],
+          y: cursorY,
+          type: "ingredient"
+        });
+        itemYs.push(cursorY);
+        cursorY += layout.itemGap;
+      });
+    } else {
+      itemYs.push(cursorY);
+      cursorY += layout.itemGap;
+    }
+
+    const centerY = (itemYs[0] + itemYs[itemYs.length - 1]) / 2;
     categoryNodes.push({
       id: `cat-${category.id}`,
       label: category.label,
@@ -199,53 +226,78 @@ const renderTree = () => {
       type: "category"
     });
 
-    currentY += layout.rowGap * 0.6;
+    cursorY += layout.blockGap;
   });
 
   const averageY = (nodes) =>
     nodes.reduce((sum, node) => sum + node.y, 0) / Math.max(nodes.length, 1);
-  const comboY = averageY(categoryNodes) || layout.padY;
+  const rootY = averageY(categoryNodes) || layout.padY;
+
+  const rootNode = {
+    id: "root",
+    label: "Ingredient Roulette",
+    x: colX[2],
+    y: rootY,
+    type: "root"
+  };
 
   const comboNode = {
     id: "combo",
-    label: "Combination Merge",
-    x: colX[2],
-    y: comboY,
+    label: "Cooking Merge",
+    x: colX[3],
+    y: rootY,
     type: "hub"
   };
 
-  const styleNodes = styleCategory.items.map((style, index) => {
-    const spread = (styleCategory.items.length - 1) * layout.rowGap * 1.2;
-    const startY = comboY - spread / 2;
-    return {
-      id: style.id,
-      label: style.name,
-      x: colX[3],
-      y: startY + index * layout.rowGap * 1.2,
-      type: "style"
-    };
-  });
+  const styleHub = {
+    id: "styleHub",
+    label: "Cooking Style",
+    x: colX[4],
+    y: rootY,
+    type: "hub"
+  };
+
+  const styleNodes = state.styleCollapsed
+    ? []
+    : styleCategory.items.map((style, index) => {
+        const spread = (styleCategory.items.length - 1) * layout.itemGap * 1.2;
+        const startY = rootY - spread / 2;
+        return {
+          id: style.id,
+          label: style.name,
+          x: colX[5],
+          y: startY + index * layout.itemGap * 1.2,
+          type: "style"
+        };
+      });
 
   const finalNode = {
     id: "final",
     label: "Final Dish",
-    x: colX[4],
-    y: comboY,
+    x: colX[6],
+    y: rootY,
     type: "hub"
   };
 
   const maxY = Math.max(
+    rootY,
     ...ingredientNodes.map((node) => node.y),
-    ...styleNodes.map((node) => node.y),
-    comboY
+    ...categoryNodes.map((node) => node.y),
+    ...styleNodes.map((node) => node.y)
   );
-  const width = colX[4] + layout.nodeW + layout.padX;
-  const height = maxY + layout.padY * 2;
+  const minY = Math.min(
+    rootY,
+    ...ingredientNodes.map((node) => node.y),
+    ...categoryNodes.map((node) => node.y),
+    ...styleNodes.map((node) => node.y)
+  );
+  const height = maxY - minY + layout.padY * 2 + layout.nodeH;
+  const width = colX[6] + layout.nodeW + layout.padX;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("viewBox", `0 ${minY - layout.padY} ${width} ${height}`);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", "Ingredient branching tree");
+  svg.setAttribute("aria-label", "Ingredient mind map tree");
 
   const addEdge = (from, to, isSelected) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -258,6 +310,21 @@ const renderTree = () => {
     path.setAttribute("d", d);
     path.setAttribute("class", `tree-edge${isSelected ? " selected" : ""}`);
     svg.appendChild(path);
+  };
+
+  const badgeMap = {
+    proteins: "P",
+    vegetables: "V",
+    carbs: "C",
+    aromatics: "A",
+    spices: "S",
+    sauces: "Sa",
+    fats: "F",
+    finishes: "Fi",
+    root: "IR",
+    combo: "CM",
+    styleHub: "St",
+    final: "FD"
   };
 
   const addNode = (node, options = {}) => {
@@ -273,29 +340,36 @@ const renderTree = () => {
       `tree-node${options.isHub ? " hub" : ""}${options.isSelected ? " selected" : ""}`
     );
 
+    const labelX = options.badge ? node.x + 36 : node.x + 12;
     const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    text.setAttribute("x", node.x + 10);
+    text.setAttribute("x", labelX);
     text.setAttribute("y", node.y + layout.nodeH / 2 + 4);
     text.setAttribute("class", "tree-label");
-
-    if (options.lines && options.lines.length > 1) {
-      text.textContent = "";
-      options.lines.forEach((line, index) => {
-        const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-        tspan.setAttribute("x", node.x + 10);
-        tspan.setAttribute("dy", index === 0 ? "0" : "14");
-        tspan.setAttribute("class", index === 0 ? "tree-label" : "tree-label sub");
-        tspan.textContent = line;
-        text.appendChild(tspan);
-      });
-    } else {
-      text.textContent = node.label;
-    }
+    text.textContent = node.label;
 
     group.appendChild(rect);
+
+    if (options.badge) {
+      const badgeCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      badgeCircle.setAttribute("cx", node.x + 18);
+      badgeCircle.setAttribute("cy", node.y + layout.nodeH / 2);
+      badgeCircle.setAttribute("r", "9");
+      badgeCircle.setAttribute("class", "tree-badge");
+
+      const badgeText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      badgeText.setAttribute("x", node.x + 18);
+      badgeText.setAttribute("y", node.y + layout.nodeH / 2 + 4);
+      badgeText.setAttribute("text-anchor", "middle");
+      badgeText.setAttribute("class", "tree-badge-text");
+      badgeText.textContent = options.badge;
+
+      group.appendChild(badgeCircle);
+      group.appendChild(badgeText);
+    }
+
     group.appendChild(text);
 
-    if (state.mode === "pick" && options.onClick) {
+    if (options.onClick) {
       group.style.cursor = "pointer";
       group.addEventListener("click", options.onClick);
     }
@@ -311,12 +385,15 @@ const renderTree = () => {
 
   categoryNodes.forEach((categoryNode) => {
     const hasSelection = state.selected.get(categoryNode.categoryId)?.size > 0;
-    addEdge(categoryNode, comboNode, hasSelection);
+    addEdge(categoryNode, rootNode, hasSelection);
   });
+
+  addEdge(rootNode, comboNode, Boolean(selectedStyleId));
+  addEdge(comboNode, styleHub, Boolean(selectedStyleId));
 
   styleNodes.forEach((styleNode) => {
     const isSelected = styleNode.id === selectedStyleId;
-    addEdge(comboNode, styleNode, isSelected);
+    addEdge(styleHub, styleNode, isSelected);
     addEdge(styleNode, finalNode, isSelected);
   });
 
@@ -328,29 +405,68 @@ const renderTree = () => {
       { ...ingredient, label },
       {
         isSelected,
-        onClick: () => toggleSelection(ingredient.categoryId, ingredient.id)
+        onClick:
+          state.mode === "pick"
+            ? () => toggleSelection(ingredient.categoryId, ingredient.id)
+            : null
       }
     );
   });
 
   categoryNodes.forEach((categoryNode) => {
+    const isCollapsed = state.collapsedCategories.has(categoryNode.categoryId);
     const hasSelection = state.selected.get(categoryNode.categoryId)?.size > 0;
-    addNode(categoryNode, { isSelected: hasSelection, isHub: true });
+    addNode(categoryNode, {
+      isSelected: hasSelection,
+      isHub: true,
+      badge: badgeMap[categoryNode.categoryId],
+      onClick: () => toggleCategoryCollapse(categoryNode.categoryId)
+    });
+
+    if (isCollapsed) {
+      const hintNode = {
+        id: `hint-${categoryNode.categoryId}`,
+        label: "Show items",
+        x: categoryNode.x,
+        y: categoryNode.y + layout.nodeH + 6
+      };
+      addNode(hintNode, {
+        isHub: false,
+        onClick: () => toggleCategoryCollapse(categoryNode.categoryId)
+      });
+    }
   });
 
-  addNode(comboNode, { isHub: true, isSelected: Boolean(selectedStyleId) });
+  addNode(rootNode, {
+    isHub: true,
+    isSelected: Boolean(selectedStyleId),
+    badge: badgeMap.root
+  });
+  addNode(comboNode, {
+    isHub: true,
+    isSelected: Boolean(selectedStyleId),
+    badge: badgeMap.combo
+  });
+  addNode(styleHub, {
+    isHub: true,
+    isSelected: Boolean(selectedStyleId),
+    badge: badgeMap.styleHub,
+    onClick: toggleStyleCollapse
+  });
 
   styleNodes.forEach((styleNode) => {
     const isSelected = styleNode.id === selectedStyleId;
     addNode(styleNode, {
       isSelected,
-      onClick: () => toggleSelection("style", styleNode.id)
+      onClick:
+        state.mode === "pick" ? () => toggleSelection("style", styleNode.id) : null
     });
   });
 
   addNode(finalNode, {
     isHub: true,
-    isSelected: Boolean(selectedStyleId)
+    isSelected: Boolean(selectedStyleId),
+    badge: badgeMap.final
   });
 
   treeCanvas.appendChild(svg);
