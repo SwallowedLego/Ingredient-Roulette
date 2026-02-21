@@ -153,6 +153,17 @@ const renderProcess = () => {
     "Pick ingredients to customize the flow."
   ];
 
+  const categoryActions = {
+    proteins: "Sear or cook until done",
+    vegetables: "Saute or roast until tender",
+    carbs: "Boil, steam, or roast until cooked",
+    aromatics: "Add early to bloom flavor",
+    spices: "Toast briefly to release aroma",
+    sauces: "Stir in to coat and simmer",
+    fats: "Use to start cooking or finish",
+    finishes: "Sprinkle on at the end"
+  };
+
   const categorySteps = [];
   categories.forEach((category) => {
     if (category.id === "style") {
@@ -172,7 +183,10 @@ const renderProcess = () => {
       entries.push(amount ? `${item.name} (${amount})` : item.name);
     });
     if (entries.length) {
-      categorySteps.push(`${category.label}: ${entries.join(", ")}.`);
+      const ingredientLine = `${category.label}: ${entries.join(", ")}.`;
+      const action = categoryActions[category.id] || "Add as needed";
+      categorySteps.push(ingredientLine);
+      categorySteps.push(`${action}.`);
     }
   });
 
