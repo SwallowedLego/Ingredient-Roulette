@@ -52,12 +52,33 @@
         </div>
       </section>
 
-      <section class="tree">
-        <div class="tree-header">
-          <h2>Branching Ingredient Tree</h2>
-          <p>Every ingredient starts as its own branch, then merges into the cooking flow.</p>
+      <section class="community">
+        <div class="community-header">
+          <h2>Recipe Community</h2>
+          <p>Name your recipe and commit it to the community board.</p>
         </div>
-        <div id="treeCanvas" class="tree-canvas"></div>
+        <div class="community-grid">
+          <form id="recipeForm" class="community-form">
+            <label class="field">
+              <span>Recipe name</span>
+              <input id="recipeName" type="text" placeholder="My Stir-Fry Remix" required />
+            </label>
+            <label class="field">
+              <span>Recipe details</span>
+              <textarea
+                id="recipeDetails"
+                rows="6"
+                placeholder="Add the ingredient list and cooking steps..."
+                required
+              ></textarea>
+            </label>
+            <button type="submit" class="primary">Commit Recipe</button>
+          </form>
+          <div class="community-board">
+            <h3>Community Recipes</h3>
+            <div id="recipeList" class="recipe-list"></div>
+          </div>
+        </div>
       </section>
     </div>
 
