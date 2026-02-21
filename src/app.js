@@ -147,68 +147,170 @@ const renderProcess = () => {
     .find((category) => category.id === "style")
     .items.find((item) => item.id === styleId);
 
-  const steps = style?.steps ? [...style.steps] : [
+  const defaultSteps = [
     "Choose a cooking style to generate steps.",
     "Randomize to get a full process path.",
     "Pick ingredients to customize the flow."
   ];
 
-  const categoryActions = {
-    proteins: "Sear or cook until done",
-    vegetables: "Saute or roast until tender",
-    carbs: "Boil, steam, or roast until cooked",
-    aromatics: "Add early to bloom flavor",
-    spices: "Toast briefly to release aroma",
-    sauces: "Stir in to coat and simmer",
-    fats: "Use to start cooking or finish",
-    finishes: "Sprinkle on at the end"
+  const collectItems = (categoryId) => {
+    const category = categories.find((entry) => entry.id === categoryId);
+    const selectedItems = state.selected.get(categoryId);
+    if (!category || !selectedItems || selectedItems.size === 0) {
+      return [];
+    }
+    return Array.from(selectedItems)
+      .map((itemId) => {
+        const item = category.items.find((entry) => entry.id === itemId);
+        if (!item) {
+          return null;
+        }
+        const amount = state.amounts.get(itemId);
+        return amount ? `${item.name} (${amount})` : item.name;
+      })
+      .filter(Boolean);
   };
 
-  const categoryOrder = [
-    "fats",
-    "aromatics",
-    "spices",
-    "proteins",
-    "vegetables",
-    "sauces",
-    "carbs",
-    "finishes"
-  ];
+  const fats = collectItems("fats");
+  const aromatics = collectItems("aromatics");
+  const spices = collectItems("spices");
+  const proteins = collectItems("proteins");
+  const vegetables = collectItems("vegetables");
+  const sauces = collectItems("sauces");
+  const carbs = collectItems("carbs");
+  const finishes = collectItems("finishes");
 
-  const categorySteps = [];
-  categoryOrder.forEach((categoryId) => {
-    const category = categories.find((entry) => entry.id === categoryId);
-    if (!category) {
-      return;
-    }
-    if (category.id === "style") {
-      return;
-    }
-    const selectedItems = state.selected.get(category.id);
-    if (!selectedItems || selectedItems.size === 0) {
-      return;
-    }
-    const entries = [];
-    selectedItems.forEach((itemId) => {
-      const item = category.items.find((entry) => entry.id === itemId);
-      if (!item) {
-        return;
-      }
-      const amount = state.amounts.get(itemId);
-      entries.push(amount ? `${item.name} (${amount})` : item.name);
-    });
-    if (entries.length) {
-      const ingredientLine = `${category.label}: ${entries.join(", ")}.`;
-      const action = categoryActions[category.id] || "Add as needed";
-      categorySteps.push(ingredientLine);
-      categorySteps.push(`${action}.`);
-    }
-  });
+  const hasIngredients =
+    fats.length ||
+    aromatics.length ||
+    spices.length ||
+    proteins.length ||
+    vegetables.length ||
+    sauces.length ||
+    carbs.length ||
+    finishes.length;
 
-  if (categorySteps.length) {
-    steps.push(...categorySteps);
+  const carbMethod = (name) => {
+    const lower = name.toLowerCase();
+    if (lower.includes("nood")) {
+      return "boil";
+    }
+    if (lower.includes("rice")) {
+      return "steam";
+    }
+    if (lower.includes("potato")) {
+      return "roast";
+    }
+    return "cook";
+  };
+
+  const steps = [];
+
+  if (!style || !hasIngredients) {
+    steps.push(...defaultSteps);
   } else {
-    steps.push("Ingredients: choose or randomize to fill the list.");
+    if (styleId === "roast") {
+      steps.push("Heat oven to 220C.");
+      if (fats.length || aromatics.length || spices.length) {
+        const flavorBits = [...fats, ...aromatics, ...spices].join(", ");
+        steps.push(`Toss ${flavorBits} together to coat and season.`);
+      }
+      if (proteins.length || vegetables.length) {
+        const roastItems = [...proteins, ...vegetables].join(", ");
+        steps.push(`Roast ${roastItems} on a sheet pan until browned and tender.`);
+      }
+      if (carbs.length) {
+        const carbLines = carbs
+          .map((item) => `${carbMethod(item)} ${item}`)
+          .join(", ");
+        steps.push(`Meanwhile, ${carbLines}.`);
+      }
+      if (sauces.length) {
+        steps.push(`Finish with sauces: ${sauces.join(", ")}.`);
+      }
+      if (finishes.length) {
+        steps.push(`Add finishes: ${finishes.join(", ")}.`);
+      }
+    } else if (styleId === "stirfry") {
+      steps.push("Heat a wok or skillet until hot.");
+      if (fats.length) {
+        steps.push(`Add ${fats.join(", ")} to the pan.`);
+      }
+      if (proteins.length) {
+        steps.push(`Sear ${proteins.join(", ")} until just cooked, then remove.`);
+      }
+      if (aromatics.length || spices.length) {
+        const aromaticsLine = [...aromatics, ...spices].join(", ");
+        steps.push(`Stir-fry ${aromaticsLine} for 30 seconds to bloom.`);
+      }
+      if (vegetables.length) {
+        steps.push(`Add ${vegetables.join(", ")} and toss until crisp-tender.`);
+      }
+      if (sauces.length) {
+        steps.push(`Return protein and add sauces: ${sauces.join(", ")}.`);
+      }
+      if (carbs.length) {
+        const carbLines = carbs
+          .map((item) => `${carbMethod(item)} ${item}`)
+          .join(", ");
+        steps.push(`Cook carbs separately, then serve with the stir-fry: ${carbLines}.`);
+      }
+      if (finishes.length) {
+        steps.push(`Finish with ${finishes.join(", ")}.`);
+      }
+    } else if (styleId === "braise") {
+      steps.push("Heat a pot over medium-high heat.");
+      if (fats.length) {
+        steps.push(`Add ${fats.join(", ")} to the pot.`);
+      }
+      if (proteins.length) {
+        steps.push(`Brown ${proteins.join(", ")} for color, then remove.`);
+      }
+      if (aromatics.length || spices.length) {
+        const aromaticsLine = [...aromatics, ...spices].join(", ");
+        steps.push(`Cook ${aromaticsLine} until fragrant.`);
+      }
+      if (vegetables.length) {
+        steps.push(`Add ${vegetables.join(", ")} and cook briefly.`);
+      }
+      if (sauces.length) {
+        steps.push(`Stir in sauces and enough liquid to cover.`);
+      }
+      steps.push("Return protein, cover, and simmer until tender.");
+      if (carbs.length) {
+        const carbLines = carbs
+          .map((item) => `${carbMethod(item)} ${item}`)
+          .join(", ");
+        steps.push(`Cook carbs separately: ${carbLines}.`);
+      }
+      if (finishes.length) {
+        steps.push(`Finish with ${finishes.join(", ")}.`);
+      }
+    } else if (styleId === "grill") {
+      steps.push("Preheat the grill on high.");
+      if (fats.length || spices.length) {
+        const seasoning = [...fats, ...spices].join(", ");
+        steps.push(`Season with ${seasoning}.`);
+      }
+      if (proteins.length) {
+        steps.push(`Grill ${proteins.join(", ")} until charred and cooked through.`);
+      }
+      if (vegetables.length) {
+        steps.push(`Grill ${vegetables.join(", ")} until marked and tender.`);
+      }
+      if (sauces.length) {
+        steps.push(`Glaze with ${sauces.join(", ")}.`);
+      }
+      if (carbs.length) {
+        const carbLines = carbs
+          .map((item) => `${carbMethod(item)} ${item}`)
+          .join(", ");
+        steps.push(`Prepare carbs alongside: ${carbLines}.`);
+      }
+      if (finishes.length) {
+        steps.push(`Finish with ${finishes.join(", ")}.`);
+      }
+    }
   }
 
   steps.forEach((step) => {
