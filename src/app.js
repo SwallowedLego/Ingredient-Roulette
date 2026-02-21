@@ -350,6 +350,7 @@ const renderTree = () => {
   const availableWidth = Math.max(860, containerWidth) - padX * 2 - nodeW;
   const colGap = Math.max(160, Math.floor(availableWidth / (totalColumns - 1)));
 
+  const styleCount = state.styleCollapsed ? 1 : styleCategory.items.length;
   const maxCategoryItems = Math.max(
     ...processOrder.map((categoryId) => {
       if (state.collapsedCategories.has(categoryId)) {
