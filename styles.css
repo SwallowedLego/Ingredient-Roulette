@@ -205,25 +205,25 @@ button:active {
   color: var(--muted);
 }
 
-.community {
+.your-recipes {
   display: grid;
   gap: 16px;
 }
 
-.community-header {
+.your-recipes-header {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.community-grid {
+.your-recipes-grid {
   display: grid;
   grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
   gap: 18px;
 }
 
-.community-form,
-.community-board {
+.your-recipes-form,
+.your-recipes-board {
   background: var(--card);
   border: 1px solid var(--stroke);
   border-radius: 20px;
@@ -240,7 +240,7 @@ button:active {
   gap: 12px;
 }
 
-.community-board h3 {
+.your-recipes-board h3 {
   font-size: 20px;
   font-family: "Fraunces", serif;
 }
@@ -309,7 +309,7 @@ button:active {
     align-items: flex-start;
   }
 
-  .community-grid {
+  .your-recipes-grid {
     grid-template-columns: 1fr;
   }
 }

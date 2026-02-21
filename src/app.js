@@ -309,7 +309,7 @@ const renderProcess = () => {
   });
 };
 
-const storageKey = "ingredient-roulette-community";
+const storageKey = "ingredient-roulette-your-recipes";
 
 const renderRecipes = (recipes) => {
   recipeList.innerHTML = "";
