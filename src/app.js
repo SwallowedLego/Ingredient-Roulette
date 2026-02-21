@@ -311,6 +311,8 @@ const renderProcess = () => {
 
 const repoOwner = "SwallowedLego";
 const repoName = "Ingredient-Roulette";
+const recipesFileUrl =
+  `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/recipes.txt`;
 
 const renderRecipes = (recipes) => {
   recipeList.innerHTML = "";
@@ -348,21 +350,13 @@ const renderRecipes = (recipes) => {
 const fetchRecipes = async () => {
   recipeList.innerHTML = "<p class=\"summary-item\">Loading recipes...</p>";
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${repoOwner}/${repoName}/issues?state=open&per_page=30`
-    );
+    const response = await fetch(recipesFileUrl);
     if (!response.ok) {
       throw new Error("Failed to load");
     }
-    const issues = await response.json();
-    const recipes = issues
-      .filter((issue) => issue.title.toLowerCase().startsWith("recipe:"))
-      .map((issue) => ({
-        name: issue.title.replace(/^recipe:\s*/i, ""),
-        details: issue.body || "",
-        url: issue.html_url
-      }));
-    renderRecipes(recipes);
+    const text = await response.text();
+    const parsed = text.trim() ? JSON.parse(text) : [];
+    renderRecipes(parsed);
   } catch (error) {
     recipeList.innerHTML =
       "<p class=\"summary-item\">Could not load recipes. Try refresh.</p>";
