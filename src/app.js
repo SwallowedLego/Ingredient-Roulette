@@ -153,6 +153,31 @@ const renderProcess = () => {
     "Pick ingredients to customize the flow."
   ];
 
+  const ingredientList = [];
+  categories.forEach((category) => {
+    if (category.id === "style") {
+      return;
+    }
+    const selectedItems = state.selected.get(category.id);
+    if (!selectedItems || selectedItems.size === 0) {
+      return;
+    }
+    selectedItems.forEach((itemId) => {
+      const item = category.items.find((entry) => entry.id === itemId);
+      if (!item) {
+        return;
+      }
+      const amount = state.amounts.get(itemId);
+      ingredientList.push(amount ? `${item.name} (${amount})` : item.name);
+    });
+  });
+
+  if (ingredientList.length) {
+    steps.push(`Ingredients: ${ingredientList.join(", ")}.`);
+  } else {
+    steps.push("Ingredients: choose or randomize to fill the list.");
+  }
+
   steps.forEach((step) => {
     const li = document.createElement("li");
     li.className = "process-step";
