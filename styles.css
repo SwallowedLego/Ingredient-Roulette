@@ -223,6 +223,7 @@ button:active {
   padding: 12px;
   box-shadow: var(--shadow);
   overflow: auto;
+  min-height: 420px;
 }
 
 .tree-canvas svg {

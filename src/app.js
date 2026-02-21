@@ -340,13 +340,13 @@ const renderTree = () => {
   ];
 
   const layout = {
-    padX: 40,
-    padY: 40,
-    colGap: 170,
-    itemGap: 32,
-    nodeW: 170,
-    nodeH: 28,
-    itemOffset: 120
+    padX: 60,
+    padY: 60,
+    colGap: 210,
+    itemGap: 44,
+    nodeW: 200,
+    nodeH: 32,
+    itemOffset: 160
   };
 
   const styleCount = state.styleCollapsed ? 1 : styleCategory.items.length;
@@ -360,7 +360,7 @@ const renderTree = () => {
     })
   );
 
-  const hubY = layout.padY + Math.max(styleCount, maxCategoryItems) * layout.itemGap;
+  const hubY = layout.padY + Math.max(styleCount, maxCategoryItems) * layout.itemGap * 1.1;
   const styleHubX = layout.padX;
   const styleNodeX = styleHubX + layout.colGap;
   const processStartX = styleNodeX + layout.colGap;
