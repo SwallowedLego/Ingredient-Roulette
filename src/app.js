@@ -164,8 +164,23 @@ const renderProcess = () => {
     finishes: "Sprinkle on at the end"
   };
 
+  const categoryOrder = [
+    "fats",
+    "aromatics",
+    "spices",
+    "proteins",
+    "vegetables",
+    "sauces",
+    "carbs",
+    "finishes"
+  ];
+
   const categorySteps = [];
-  categories.forEach((category) => {
+  categoryOrder.forEach((categoryId) => {
+    const category = categories.find((entry) => entry.id === categoryId);
+    if (!category) {
+      return;
+    }
     if (category.id === "style") {
       return;
     }
