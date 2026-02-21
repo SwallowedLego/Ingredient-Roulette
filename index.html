@@ -55,7 +55,7 @@
       <section class="community">
         <div class="community-header">
           <h2>Recipe Community</h2>
-          <p>Name your recipe and commit it to the community board.</p>
+          <p>Recipes are shared worldwide via GitHub Issues.</p>
         </div>
         <div class="community-grid">
           <form id="recipeForm" class="community-form">
@@ -72,10 +72,16 @@
                 required
               ></textarea>
             </label>
-            <button type="submit" class="primary">Commit Recipe</button>
+            <button type="submit" class="primary">Submit Recipe</button>
+            <p class="helper">
+              Submitting opens GitHub so anyone can see and share your recipe.
+            </p>
           </form>
           <div class="community-board">
-            <h3>Community Recipes</h3>
+            <div class="board-header">
+              <h3>Community Recipes</h3>
+              <button id="refreshRecipes" class="ghost">Refresh</button>
+            </div>
             <div id="recipeList" class="recipe-list"></div>
           </div>
         </div>

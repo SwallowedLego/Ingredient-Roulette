@@ -11,6 +11,7 @@ const recipeForm = document.getElementById("recipeForm");
 const recipeName = document.getElementById("recipeName");
 const recipeDetails = document.getElementById("recipeDetails");
 const recipeList = document.getElementById("recipeList");
+const refreshRecipes = document.getElementById("refreshRecipes");
 
 const state = {
   mode: "random",
@@ -308,25 +309,14 @@ const renderProcess = () => {
   });
 };
 
-const storageKey = "ingredient-roulette-community";
-
-const loadRecipes = () => {
-  try {
-    const raw = window.localStorage.getItem(storageKey);
-    return raw ? JSON.parse(raw) : [];
-  } catch (error) {
-    return [];
-  }
-};
-
-const saveRecipes = (recipes) => {
-  window.localStorage.setItem(storageKey, JSON.stringify(recipes));
-};
+const repoOwner = "SwallowedLego";
+const repoName = "Ingredient-Roulette";
 
 const renderRecipes = (recipes) => {
   recipeList.innerHTML = "";
   if (!recipes.length) {
-    recipeList.innerHTML = "<p class=\"summary-item\">No recipes yet. Commit the first one!</p>";
+    recipeList.innerHTML =
+      "<p class=\"summary-item\">No recipes yet. Submit the first one!</p>";
     return;
   }
   recipes.forEach((recipe) => {
@@ -337,10 +327,15 @@ const renderRecipes = (recipes) => {
     title.textContent = recipe.name;
     card.appendChild(title);
 
-    const meta = document.createElement("div");
-    meta.className = "recipe-meta";
-    meta.textContent = recipe.date;
-    card.appendChild(meta);
+    if (recipe.url) {
+      const meta = document.createElement("a");
+      meta.className = "recipe-meta";
+      meta.href = recipe.url;
+      meta.target = "_blank";
+      meta.rel = "noreferrer";
+      meta.textContent = "View on GitHub";
+      card.appendChild(meta);
+    }
 
     const details = document.createElement("p");
     details.textContent = recipe.details;
@@ -348,6 +343,30 @@ const renderRecipes = (recipes) => {
 
     recipeList.appendChild(card);
   });
+};
+
+const fetchRecipes = async () => {
+  recipeList.innerHTML = "<p class=\"summary-item\">Loading recipes...</p>";
+  try {
+    const response = await fetch(
+      `https://api.github.com/repos/${repoOwner}/${repoName}/issues?state=open&per_page=30`
+    );
+    if (!response.ok) {
+      throw new Error("Failed to load");
+    }
+    const issues = await response.json();
+    const recipes = issues
+      .filter((issue) => issue.title.toLowerCase().startsWith("recipe:"))
+      .map((issue) => ({
+        name: issue.title.replace(/^recipe:\s*/i, ""),
+        details: issue.body || "",
+        url: issue.html_url
+      }));
+    renderRecipes(recipes);
+  } catch (error) {
+    recipeList.innerHTML =
+      "<p class=\"summary-item\">Could not load recipes. Try refresh.</p>";
+  }
 };
 
 const render = () => {
@@ -407,20 +426,19 @@ recipeForm.addEventListener("submit", (event) => {
   if (!name || !details) {
     return;
   }
-  const recipes = loadRecipes();
-  recipes.unshift({
-    name,
-    details,
-    date: new Date().toISOString().slice(0, 10)
-  });
-  saveRecipes(recipes);
-  renderRecipes(recipes);
+  const title = `Recipe: ${name}`;
+  const url = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${encodeURIComponent(
+    title
+  )}&body=${encodeURIComponent(details)}`;
+  window.open(url, "_blank", "noopener,noreferrer");
   recipeForm.reset();
   recipeDetails.value = buildRecipeText();
 });
 
+refreshRecipes.addEventListener("click", fetchRecipes);
+
 setStatus();
 randomizeSelections();
 render();
-renderRecipes(loadRecipes());
+fetchRecipes();
 recipeDetails.value = buildRecipeText();
