@@ -339,17 +339,17 @@ const renderTree = () => {
     "finishes"
   ];
 
-  const layout = {
-    padX: 60,
-    padY: 60,
-    colGap: 210,
-    itemGap: 44,
-    nodeW: 200,
-    nodeH: 32,
-    itemOffset: 160
-  };
+  const containerWidth = treeCanvas.clientWidth || 1200;
+  const containerHeight = treeCanvas.clientHeight || 520;
+  const padX = 60;
+  const padY = 60;
+  const nodeW = 200;
+  const nodeH = 32;
 
-  const styleCount = state.styleCollapsed ? 1 : styleCategory.items.length;
+  const totalColumns = processOrder.length + 3;
+  const availableWidth = Math.max(860, containerWidth) - padX * 2 - nodeW;
+  const colGap = Math.max(160, Math.floor(availableWidth / (totalColumns - 1)));
+
   const maxCategoryItems = Math.max(
     ...processOrder.map((categoryId) => {
       if (state.collapsedCategories.has(categoryId)) {
@@ -359,6 +359,21 @@ const renderTree = () => {
       return category ? category.items.length : 1;
     })
   );
+
+  const maxVerticalItems = Math.max(styleCount, maxCategoryItems, 4);
+  const availableHeight = Math.max(420, containerHeight) - padY * 2;
+  const itemGap = Math.max(32, Math.min(54, Math.floor(availableHeight / maxVerticalItems)));
+  const itemOffset = Math.max(120, Math.min(200, colGap - 30));
+
+  const layout = {
+    padX,
+    padY,
+    colGap,
+    itemGap,
+    nodeW,
+    nodeH,
+    itemOffset
+  };
 
   const hubY = layout.padY + Math.max(styleCount, maxCategoryItems) * layout.itemGap * 1.1;
   const styleHubX = layout.padX;
