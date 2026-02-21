@@ -147,13 +147,13 @@ const renderProcess = () => {
     .find((category) => category.id === "style")
     .items.find((item) => item.id === styleId);
 
-  const steps = style?.steps || [
+  const steps = style?.steps ? [...style.steps] : [
     "Choose a cooking style to generate steps.",
     "Randomize to get a full process path.",
     "Pick ingredients to customize the flow."
   ];
 
-  const ingredientList = [];
+  const categorySteps = [];
   categories.forEach((category) => {
     if (category.id === "style") {
       return;
@@ -162,18 +162,22 @@ const renderProcess = () => {
     if (!selectedItems || selectedItems.size === 0) {
       return;
     }
+    const entries = [];
     selectedItems.forEach((itemId) => {
       const item = category.items.find((entry) => entry.id === itemId);
       if (!item) {
         return;
       }
       const amount = state.amounts.get(itemId);
-      ingredientList.push(amount ? `${item.name} (${amount})` : item.name);
+      entries.push(amount ? `${item.name} (${amount})` : item.name);
     });
+    if (entries.length) {
+      categorySteps.push(`${category.label}: ${entries.join(", ")}.`);
+    }
   });
 
-  if (ingredientList.length) {
-    steps.push(`Ingredients: ${ingredientList.join(", ")}.`);
+  if (categorySteps.length) {
+    steps.push(...categorySteps);
   } else {
     steps.push("Ingredients: choose or randomize to fill the list.");
   }
