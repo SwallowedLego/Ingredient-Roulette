@@ -324,77 +324,51 @@ const renderProcess = () => {
 const renderTree = () => {
   treeCanvas.innerHTML = "";
 
-  const ingredientCategories = categories.filter((category) => category.id !== "style");
   const styleCategory = categories.find((category) => category.id === "style");
   const selectedStyle = state.selected.get("style");
   const selectedStyleId = selectedStyle ? Array.from(selectedStyle)[0] : null;
 
+  const processOrder = [
+    "fats",
+    "aromatics",
+    "spices",
+    "proteins",
+    "vegetables",
+    "sauces",
+    "carbs",
+    "finishes"
+  ];
+
   const layout = {
     padX: 40,
     padY: 40,
-    colGap: 180,
-    itemGap: 34,
-    blockGap: 24,
+    colGap: 170,
+    itemGap: 32,
     nodeW: 170,
-    nodeH: 28
+    nodeH: 28,
+    itemOffset: 120
   };
 
-  const colX = [
-    layout.padX,
-    layout.padX + layout.colGap,
-    layout.padX + layout.colGap * 2,
-    layout.padX + layout.colGap * 3,
-    layout.padX + layout.colGap * 4
-  ];
+  const styleCount = state.styleCollapsed ? 1 : styleCategory.items.length;
+  const maxCategoryItems = Math.max(
+    ...processOrder.map((categoryId) => {
+      if (state.collapsedCategories.has(categoryId)) {
+        return 1;
+      }
+      const category = categories.find((entry) => entry.id === categoryId);
+      return category ? category.items.length : 1;
+    })
+  );
 
-  let cursorY = layout.padY;
-  const ingredientNodes = [];
-  const categoryNodes = [];
-
-  ingredientCategories.forEach((category) => {
-    const isCollapsed = state.collapsedCategories.has(category.id);
-    const items = isCollapsed ? [] : category.items;
-    const itemYs = [];
-
-    if (items.length) {
-      items.forEach((item) => {
-        ingredientNodes.push({
-          id: item.id,
-          label: item.name,
-          categoryId: category.id,
-          x: colX[0],
-          y: cursorY,
-          type: "ingredient"
-        });
-        itemYs.push(cursorY);
-        cursorY += layout.itemGap;
-      });
-    } else {
-      itemYs.push(cursorY);
-      cursorY += layout.itemGap;
-    }
-
-    const centerY = (itemYs[0] + itemYs[itemYs.length - 1]) / 2;
-    categoryNodes.push({
-      id: `cat-${category.id}`,
-      label: category.label,
-      categoryId: category.id,
-      x: colX[1],
-      y: centerY,
-      type: "category"
-    });
-
-    cursorY += layout.blockGap;
-  });
-
-  const averageY = (nodes) =>
-    nodes.reduce((sum, node) => sum + node.y, 0) / Math.max(nodes.length, 1);
-  const hubY = averageY(categoryNodes) || layout.padY;
+  const hubY = layout.padY + Math.max(styleCount, maxCategoryItems) * layout.itemGap;
+  const styleHubX = layout.padX;
+  const styleNodeX = styleHubX + layout.colGap;
+  const processStartX = styleNodeX + layout.colGap;
 
   const styleHub = {
     id: "styleHub",
     label: "Cooking Style",
-    x: colX[2],
+    x: styleHubX,
     y: hubY,
     type: "hub"
   };
@@ -402,44 +376,75 @@ const renderTree = () => {
   const styleNodes = state.styleCollapsed
     ? []
     : styleCategory.items.map((style, index) => {
-        const spread = (styleCategory.items.length - 1) * layout.itemGap * 1.2;
+        const spread = (styleCategory.items.length - 1) * layout.itemGap * 1.1;
         const startY = hubY - spread / 2;
         return {
           id: style.id,
           label: style.name,
-          x: colX[3],
-          y: startY + index * layout.itemGap * 1.2,
+          x: styleNodeX,
+          y: startY + index * layout.itemGap * 1.1,
           type: "style"
         };
       });
 
+  const processNodes = processOrder.map((categoryId, index) => {
+    const category = categories.find((entry) => entry.id === categoryId);
+    return {
+      id: `step-${categoryId}`,
+      label: category ? category.label : categoryId,
+      categoryId,
+      x: processStartX + index * layout.colGap,
+      y: hubY,
+      type: "hub"
+    };
+  });
+
   const finalNode = {
     id: "final",
     label: "Final Dish",
-    x: colX[4],
+    x: processStartX + processOrder.length * layout.colGap,
     y: hubY,
     type: "hub"
   };
 
-  const maxY = Math.max(
-    hubY,
-    ...ingredientNodes.map((node) => node.y),
-    ...categoryNodes.map((node) => node.y),
-    ...styleNodes.map((node) => node.y)
-  );
-  const minY = Math.min(
-    hubY,
-    ...ingredientNodes.map((node) => node.y),
-    ...categoryNodes.map((node) => node.y),
-    ...styleNodes.map((node) => node.y)
-  );
-  const height = maxY - minY + layout.padY * 2 + layout.nodeH;
-  const width = colX[4] + layout.nodeW + layout.padX;
+  const ingredientNodes = [];
+  processNodes.forEach((node) => {
+    const category = categories.find((entry) => entry.id === node.categoryId);
+    if (!category) {
+      return;
+    }
+    const isCollapsed = state.collapsedCategories.has(category.id);
+    const items = isCollapsed ? [] : category.items;
+    const itemCount = items.length || 1;
+    const startY = node.y - ((itemCount - 1) * layout.itemGap) / 2;
+
+    if (items.length) {
+      items.forEach((item, index) => {
+        ingredientNodes.push({
+          id: item.id,
+          label: item.name,
+          categoryId: category.id,
+          x: node.x - layout.itemOffset,
+          y: startY + index * layout.itemGap,
+          type: "ingredient"
+        });
+      });
+    }
+  });
+
+  const allNodes = [styleHub, finalNode, ...styleNodes, ...processNodes, ...ingredientNodes];
+  const minX = Math.min(...allNodes.map((node) => node.x));
+  const maxX = Math.max(...allNodes.map((node) => node.x + layout.nodeW));
+  const minY = Math.min(...allNodes.map((node) => node.y));
+  const maxY = Math.max(...allNodes.map((node) => node.y + layout.nodeH));
+
+  const width = maxX - minX + layout.padX * 2;
+  const height = maxY - minY + layout.padY * 2;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", `0 ${minY - layout.padY} ${width} ${height}`);
+  svg.setAttribute("viewBox", `${minX - layout.padX} ${minY - layout.padY} ${width} ${height}`);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", "Ingredient mind map tree");
+  svg.setAttribute("aria-label", "Ingredient cooking process tree");
 
   const addEdge = (from, to, isSelected) => {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -519,20 +524,30 @@ const renderTree = () => {
 
   ingredientNodes.forEach((ingredient) => {
     const isSelected = state.selected.get(ingredient.categoryId)?.has(ingredient.id);
-    const categoryNode = categoryNodes.find((node) => node.categoryId === ingredient.categoryId);
-    addEdge(ingredient, categoryNode, Boolean(isSelected));
+    const processNode = processNodes.find((node) => node.categoryId === ingredient.categoryId);
+    addEdge(ingredient, processNode, Boolean(isSelected));
   });
 
-  categoryNodes.forEach((categoryNode) => {
-    const hasSelection = state.selected.get(categoryNode.categoryId)?.size > 0;
-    addEdge(categoryNode, styleHub, hasSelection);
+  if (state.styleCollapsed) {
+    addEdge(styleHub, processNodes[0], Boolean(selectedStyleId));
+  } else {
+    styleNodes.forEach((styleNode) => {
+      const isSelected = styleNode.id === selectedStyleId;
+      addEdge(styleHub, styleNode, isSelected);
+      if (isSelected) {
+        addEdge(styleNode, processNodes[0], true);
+      }
+    });
+  }
+
+  processNodes.forEach((node, index) => {
+    if (index < processNodes.length - 1) {
+      const hasSelection = state.selected.get(node.categoryId)?.size > 0;
+      addEdge(node, processNodes[index + 1], hasSelection);
+    }
   });
 
-  styleNodes.forEach((styleNode) => {
-    const isSelected = styleNode.id === selectedStyleId;
-    addEdge(styleHub, styleNode, isSelected);
-    addEdge(styleNode, finalNode, isSelected);
-  });
+  addEdge(processNodes[processNodes.length - 1], finalNode, Boolean(selectedStyleId));
 
   ingredientNodes.forEach((ingredient) => {
     const isSelected = state.selected.get(ingredient.categoryId)?.has(ingredient.id);
@@ -550,26 +565,26 @@ const renderTree = () => {
     );
   });
 
-  categoryNodes.forEach((categoryNode) => {
-    const isCollapsed = state.collapsedCategories.has(categoryNode.categoryId);
-    const hasSelection = state.selected.get(categoryNode.categoryId)?.size > 0;
-    addNode(categoryNode, {
+  processNodes.forEach((node) => {
+    const isCollapsed = state.collapsedCategories.has(node.categoryId);
+    const hasSelection = state.selected.get(node.categoryId)?.size > 0;
+    addNode(node, {
       isSelected: hasSelection,
       isHub: true,
-      badge: badgeMap[categoryNode.categoryId],
-      onClick: () => toggleCategoryCollapse(categoryNode.categoryId)
+      badge: badgeMap[node.categoryId],
+      onClick: () => toggleCategoryCollapse(node.categoryId)
     });
 
     if (isCollapsed) {
       const hintNode = {
-        id: `hint-${categoryNode.categoryId}`,
+        id: `hint-${node.categoryId}`,
         label: "Show items",
-        x: categoryNode.x,
-        y: categoryNode.y + layout.nodeH + 6
+        x: node.x,
+        y: node.y + layout.nodeH + 6
       };
       addNode(hintNode, {
         isHub: false,
-        onClick: () => toggleCategoryCollapse(categoryNode.categoryId)
+        onClick: () => toggleCategoryCollapse(node.categoryId)
       });
     }
   });
