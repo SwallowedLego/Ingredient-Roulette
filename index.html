@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingredient Roulette</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="hero">
+        <p class="eyebrow">Ingredient Roulette</p>
+        <h1>Randomize the whole cooking process.</h1>
+        <p class="subtitle">
+          Generate a full branching ingredient table, then highlight a randomized path
+          with amounts and cooking style.
+        </p>
+      </header>
+
+      <section class="controls">
+        <div class="control-card">
+          <div class="control-row">
+            <button id="randomizeBtn" class="primary">Randomize Everything</button>
+            <button id="regenBtn" class="ghost">Regenerate Amounts</button>
+            <button id="resetBtn" class="ghost">Reset</button>
+          </div>
+          <div class="control-row">
+            <label class="toggle">
+              <input id="modeToggle" type="checkbox" />
+              <span class="toggle-track"></span>
+              <span class="toggle-text">Pick your own ingredients</span>
+            </label>
+            <div id="status" class="status">Mode: Randomize</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="results">
+        <div class="path-card">
+          <h2>Randomized Path</h2>
+          <div id="summary"></div>
+        </div>
+        <div class="process-card">
+          <h2>Cooking Process</h2>
+          <ol id="processSteps"></ol>
+        </div>
+      </section>
+
+      <section class="tree">
+        <div class="tree-header">
+          <h2>Branching Ingredient Table</h2>
+          <p>Every option is shown. Selected ingredients are highlighted.</p>
+        </div>
+        <div id="treeGrid" class="tree-grid"></div>
+      </section>
+    </div>
+
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
