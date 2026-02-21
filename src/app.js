@@ -184,9 +184,7 @@ const renderTree = () => {
     layout.padX + layout.colGap,
     layout.padX + layout.colGap * 2,
     layout.padX + layout.colGap * 3,
-    layout.padX + layout.colGap * 4,
-    layout.padX + layout.colGap * 5,
-    layout.padX + layout.colGap * 6
+    layout.padX + layout.colGap * 4
   ];
 
   let cursorY = layout.padY;
@@ -231,29 +229,13 @@ const renderTree = () => {
 
   const averageY = (nodes) =>
     nodes.reduce((sum, node) => sum + node.y, 0) / Math.max(nodes.length, 1);
-  const rootY = averageY(categoryNodes) || layout.padY;
-
-  const rootNode = {
-    id: "root",
-    label: "Ingredient Roulette",
-    x: colX[2],
-    y: rootY,
-    type: "root"
-  };
-
-  const comboNode = {
-    id: "combo",
-    label: "Cooking Merge",
-    x: colX[3],
-    y: rootY,
-    type: "hub"
-  };
+  const hubY = averageY(categoryNodes) || layout.padY;
 
   const styleHub = {
     id: "styleHub",
     label: "Cooking Style",
-    x: colX[4],
-    y: rootY,
+    x: colX[2],
+    y: hubY,
     type: "hub"
   };
 
@@ -261,11 +243,11 @@ const renderTree = () => {
     ? []
     : styleCategory.items.map((style, index) => {
         const spread = (styleCategory.items.length - 1) * layout.itemGap * 1.2;
-        const startY = rootY - spread / 2;
+        const startY = hubY - spread / 2;
         return {
           id: style.id,
           label: style.name,
-          x: colX[5],
+          x: colX[3],
           y: startY + index * layout.itemGap * 1.2,
           type: "style"
         };
@@ -274,25 +256,25 @@ const renderTree = () => {
   const finalNode = {
     id: "final",
     label: "Final Dish",
-    x: colX[6],
-    y: rootY,
+    x: colX[4],
+    y: hubY,
     type: "hub"
   };
 
   const maxY = Math.max(
-    rootY,
+    hubY,
     ...ingredientNodes.map((node) => node.y),
     ...categoryNodes.map((node) => node.y),
     ...styleNodes.map((node) => node.y)
   );
   const minY = Math.min(
-    rootY,
+    hubY,
     ...ingredientNodes.map((node) => node.y),
     ...categoryNodes.map((node) => node.y),
     ...styleNodes.map((node) => node.y)
   );
   const height = maxY - minY + layout.padY * 2 + layout.nodeH;
-  const width = colX[6] + layout.nodeW + layout.padX;
+  const width = colX[4] + layout.nodeW + layout.padX;
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", `0 ${minY - layout.padY} ${width} ${height}`);
@@ -321,8 +303,6 @@ const renderTree = () => {
     sauces: "Sa",
     fats: "F",
     finishes: "Fi",
-    root: "IR",
-    combo: "CM",
     styleHub: "St",
     final: "FD"
   };
@@ -385,11 +365,8 @@ const renderTree = () => {
 
   categoryNodes.forEach((categoryNode) => {
     const hasSelection = state.selected.get(categoryNode.categoryId)?.size > 0;
-    addEdge(categoryNode, rootNode, hasSelection);
+    addEdge(categoryNode, styleHub, hasSelection);
   });
-
-  addEdge(rootNode, comboNode, Boolean(selectedStyleId));
-  addEdge(comboNode, styleHub, Boolean(selectedStyleId));
 
   styleNodes.forEach((styleNode) => {
     const isSelected = styleNode.id === selectedStyleId;
@@ -437,16 +414,6 @@ const renderTree = () => {
     }
   });
 
-  addNode(rootNode, {
-    isHub: true,
-    isSelected: Boolean(selectedStyleId),
-    badge: badgeMap.root
-  });
-  addNode(comboNode, {
-    isHub: true,
-    isSelected: Boolean(selectedStyleId),
-    badge: badgeMap.combo
-  });
   addNode(styleHub, {
     isHub: true,
     isSelected: Boolean(selectedStyleId),
