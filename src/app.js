@@ -309,10 +309,7 @@ const renderProcess = () => {
   });
 };
 
-const repoOwner = "SwallowedLego";
-const repoName = "Ingredient-Roulette";
-const recipesFileUrl =
-  `https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/recipes.txt`;
+const storageKey = "ingredient-roulette-community";
 
 const renderRecipes = (recipes) => {
   recipeList.innerHTML = "";
@@ -347,20 +344,21 @@ const renderRecipes = (recipes) => {
   });
 };
 
-const fetchRecipes = async () => {
-  recipeList.innerHTML = "<p class=\"summary-item\">Loading recipes...</p>";
+const loadRecipes = () => {
   try {
-    const response = await fetch(recipesFileUrl);
-    if (!response.ok) {
-      throw new Error("Failed to load");
-    }
-    const text = await response.text();
-    const parsed = text.trim() ? JSON.parse(text) : [];
-    renderRecipes(parsed);
+    const raw = window.localStorage.getItem(storageKey);
+    return raw ? JSON.parse(raw) : [];
   } catch (error) {
-    recipeList.innerHTML =
-      "<p class=\"summary-item\">Could not load recipes. Try refresh.</p>";
+    return [];
   }
+};
+
+const saveRecipes = (recipes) => {
+  window.localStorage.setItem(storageKey, JSON.stringify(recipes));
+};
+
+const fetchRecipes = async () => {
+  renderRecipes(loadRecipes());
 };
 
 const render = () => {
@@ -420,11 +418,14 @@ recipeForm.addEventListener("submit", (event) => {
   if (!name || !details) {
     return;
   }
-  const title = `Recipe: ${name}`;
-  const url = `https://github.com/${repoOwner}/${repoName}/issues/new?title=${encodeURIComponent(
-    title
-  )}&body=${encodeURIComponent(details)}`;
-  window.open(url, "_blank", "noopener,noreferrer");
+  const recipes = loadRecipes();
+  recipes.unshift({
+    name,
+    details,
+    date: new Date().toISOString().slice(0, 10)
+  });
+  saveRecipes(recipes);
+  renderRecipes(recipes);
   recipeForm.reset();
   recipeDetails.value = buildRecipeText();
 });
